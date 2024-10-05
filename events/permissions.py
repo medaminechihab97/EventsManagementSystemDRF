@@ -23,3 +23,15 @@ class IsAuthenticatedAndHasRoleUser(permissions.BasePermission):
         return True
     
 
+
+class IsEventOwner(permissions.BasePermission):
+    def has_permission(self, request, view):
+        if not request.user.is_authenticated:
+            return False
+
+        if not request.user.has_role('ROLE_USER'):
+            return False
+        if request.user.id != view.get_object().owner.id:
+            return False
+
+        return True
