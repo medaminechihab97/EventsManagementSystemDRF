@@ -39,6 +39,8 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'rest_framework',
     'events',
+    'drf_yasg',
+
 ]
 
 MIDDLEWARE = [
@@ -79,8 +81,8 @@ DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.mysql', 
         'NAME': 'blogrebuilt',
-        'USER': 'root',
-        'PASSWORD': 'INOshikacho 1997',
+        'USER': 'user1',
+        'PASSWORD': 'jinjaWARRIOR 123456',
         'HOST': 'localhost',   
         'PORT': '3306',
     }
