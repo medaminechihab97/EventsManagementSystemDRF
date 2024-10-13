@@ -1,4 +1,4 @@
-from rest_framework import viewsets
+from rest_framework import viewsets, filters
 from rest_framework.permissions import AllowAny
 
 
@@ -17,6 +17,8 @@ from rest_framework import permissions
 from rest_framework_simplejwt.views import TokenObtainPairView
 from .serializers import UserSerializer, CustomTokenObtainPairSerializer
 
+from django_filters.rest_framework import DjangoFilterBackend
+from rest_framework.filters import SearchFilter, OrderingFilter
 
 class UserView(viewsets.ViewSet):
     queryset = User.objects.all()
@@ -109,13 +111,29 @@ class UserView(viewsets.ViewSet):
 
 
 
-class EventView(viewsets.ViewSet):
+class EventView(viewsets.ModelViewSet):
     queryset = Event.objects.all()
     serializer_class = EventSerializer
+    filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
+    filterset_fields = ['title', 'start_date', 'end_date', 'location', 'organizer']
+    search_fields = ['title', 'description', 'location']
+    ordering_fields = ['start_date', 'end_date', 'capacity']
+
 
     def list(self, request):
-        events = self.queryset.all()
-        serializer = self.serializer_class(events, many=True)
+        """
+        List all events.
+        
+        This endpoint supports:
+        - Filtering by: title, start_date, end_date, location, organizer
+        - Searching in: title, description, location
+        - Ordering by: start_date, end_date, capacity
+        
+        Example usage:
+        /api/event/getEventList/?title=Party&location=New York&search=concert&ordering=-start_date
+        """
+        queryset = self.filter_queryset(self.get_queryset())
+        serializer = self.get_serializer(queryset, many=True)
         return Response(serializer.data)
 
     def create(self, request):
