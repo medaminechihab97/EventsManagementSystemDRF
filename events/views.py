@@ -19,6 +19,8 @@ from .serializers import UserSerializer, CustomTokenObtainPairSerializer
 
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework.filters import SearchFilter, OrderingFilter
+from django.utils import timezone
+from django.db.models import Q
 
 class UserView(viewsets.ViewSet):
     queryset = User.objects.all()
@@ -107,13 +109,18 @@ class UserView(viewsets.ViewSet):
         return Response({"message": f"Admin role assigned to user {user.username}"}, status=status.HTTP_200_OK)
 
 
-
+from rest_framework.pagination import PageNumberPagination
+class StandardResultsSetPagination(PageNumberPagination):
+    page_size = 10
+    page_size_query_param = 'page_size'
+    max_page_size = 100
 
 
 
 class EventView(viewsets.ModelViewSet):
     queryset = Event.objects.all()
     serializer_class = EventSerializer
+    pagination_class = StandardResultsSetPagination
     filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
     filterset_fields = ['title', 'start_date', 'end_date', 'location', 'organizer']
     search_fields = ['title', 'description', 'location']
@@ -133,6 +140,10 @@ class EventView(viewsets.ModelViewSet):
         /api/event/getEventList/?title=Party&location=New York&search=concert&ordering=-start_date
         """
         queryset = self.filter_queryset(self.get_queryset())
+        page = self.paginate_queryset(queryset)
+        if page is not None:
+            serializer = self.get_serializer(page, many=True)
+            return self.get_paginated_response(serializer.data)
         serializer = self.get_serializer(queryset, many=True)
         return Response(serializer.data)
 
@@ -228,6 +239,31 @@ class EventView(viewsets.ModelViewSet):
 
         return Response({"message": f"Capacity updated to {new_capacity}"}, status=status.HTTP_200_OK)
 
+    def upcoming_events(self, request):
+        now = timezone.now()
+        queryset = self.queryset.filter(start_date__gt=now)
+
+        search = request.query_params.get('search')
+        start_date = request.query_params.get('start_date')
+        end_date = request.query_params.get('end_date')
+
+        if search:
+            queryset = queryset.filter(Q(title__icontains=search) | Q(location__icontains=search))
+
+        if start_date:
+            queryset = queryset.filter(start_date__gte=start_date)
+
+        if end_date:
+            queryset = queryset.filter(start_date__lte=end_date)
+
+        queryset = self.filter_queryset(queryset)
+        page = self.paginate_queryset(queryset)
+        if page is not None:
+            serializer = self.get_serializer(page, many=True)
+            return self.get_paginated_response(serializer.data)
+
+        serializer = self.get_serializer(queryset, many=True)
+        return Response(serializer.data)
 
 class CustomTokenObtainPairView(TokenObtainPairView):
     serializer_class = CustomTokenObtainPairSerializer

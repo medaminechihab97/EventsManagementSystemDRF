@@ -41,6 +41,7 @@ urlpatterns = [
     path('events/<int:pk>/join/', EventView.as_view({'post': 'join_event'}), name='join-event'),
     path('events/<int:pk>/waitlist/', EventView.as_view({'get': 'get_waitlist'}), name='event-waitlist'),
     path('events/<int:pk>/manage-capacity/', EventView.as_view({'post': 'manage_capacity'}), name='manage-event-capacity'),
+    path('events/upcoming/', EventView.as_view({'get': 'upcoming_events'}), name='upcoming-events'),
 
 
 
